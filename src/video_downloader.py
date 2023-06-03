@@ -1,16 +1,22 @@
 from abc import ABC, abstractmethod
 from enum import Enum, auto
-from typing import Optional
+from typing import Final, Optional
 import pytube as pt
 
+DEFAULT_VIDEO_NAME : Final[str] = "0" # Used 0 as default name because my personnal use will be to download videos based on index
+
+
 class VideoDownloadStrategy(ABC):
+    """Abstract class for video download strategies"""
     def download(self, path : str) -> None:
         pass
 
 
 class SingleVideoDownloadStrategy(VideoDownloadStrategy):
-    def __init__(self, *, video : pt.YouTube):
+    def __init__(self, *, video : pt.YouTube, name : Optional[str] = None):
         self.video = video
+        self.name = name if name is not None else DEFAULT_VIDEO_NAME 
+        self.extension = "mp3"
 
 
     def download(self, path : str) -> None:
@@ -19,7 +25,7 @@ class SingleVideoDownloadStrategy(VideoDownloadStrategy):
             .order_by('resolution') \
             .desc() \
             .first() \
-            .download(path, filename="video.mp3")
+            .download(path, filename=f"{self.name}.{self.extension}")
         
         return None
 
@@ -30,8 +36,8 @@ class MultipleVideoDownloadStrategy(VideoDownloadStrategy):
 
     
     def download(self, path : str) -> None:
-        for video in self.videos:
-            download_strategy = SingleVideoDownloadStrategy(video)
+        for index, video in enumerate(self.videos):
+            download_strategy = SingleVideoDownloadStrategy(video=video, name=str(index))
             download_strategy.download(path)
 
 
